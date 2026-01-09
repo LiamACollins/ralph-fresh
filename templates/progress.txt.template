@@ -1,0 +1,24 @@
+# Progress Log
+
+## Codebase Patterns (reusable across ALL tasks)
+
+<!--
+Add patterns here that apply to ANY future work in this repo.
+Future iterations and tasks will read this section first.
+Examples:
+- ORM: Drizzle, schema in src/db/schema.ts
+- API: Use zodios pattern in src/api/
+- Tests: Run `pnpm test:unit` for fast feedback
+-->
+
+---
+
+## Task Progress
+
+| Story | Status | Iteration |
+|-------|--------|-----------|
+
+---
+
+## Iteration Log
+
