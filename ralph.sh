@@ -227,9 +227,23 @@ for ((i=1; i<=MAX_ITERATIONS; i++)); do
 
   log "Running claude with ${TIMEOUT_MINUTES}m timeout..."
 
+  # Determine timeout command (gtimeout on macOS via coreutils, timeout on Linux)
+  TIMEOUT_CMD=""
+  if command -v gtimeout &> /dev/null; then
+    TIMEOUT_CMD="gtimeout"
+  elif command -v timeout &> /dev/null; then
+    TIMEOUT_CMD="timeout"
+  fi
+
   set +e
-  OUTPUT=$(timeout "${TIMEOUT_SECONDS}s" claude -p "$PROMPT" --dangerously-skip-permissions 2>&1)
-  EXIT_CODE=$?
+  if [[ -n "$TIMEOUT_CMD" ]]; then
+    OUTPUT=$($TIMEOUT_CMD "${TIMEOUT_SECONDS}s" claude -p "$PROMPT" --dangerously-skip-permissions 2>&1)
+    EXIT_CODE=$?
+  else
+    log "Warning: no timeout command found, running without timeout"
+    OUTPUT=$(claude -p "$PROMPT" --dangerously-skip-permissions 2>&1)
+    EXIT_CODE=$?
+  fi
   set -e
 
   if [[ $EXIT_CODE -eq 124 ]]; then
