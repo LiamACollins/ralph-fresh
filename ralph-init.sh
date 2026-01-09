@@ -46,7 +46,8 @@ fi
 
 mkdir -p "$RALPH_DIR"
 
-sed "s/{{TASK_DESCRIPTION}}/$TASK_DESCRIPTION/g" "$TEMPLATES_DIR/task.md.template" > "$RALPH_DIR/task.md"
+ESCAPED_TASK=$(printf '%s' "$TASK_DESCRIPTION" | sed 's/[&/\]/\\&/g')
+sed "s|{{TASK_DESCRIPTION}}|$ESCAPED_TASK|g" "$TEMPLATES_DIR/task.md.template" > "$RALPH_DIR/task.md"
 
 cp "$TEMPLATES_DIR/progress.txt.template" "$RALPH_DIR/progress.txt"
 {
