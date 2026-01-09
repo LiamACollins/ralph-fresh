@@ -34,7 +34,7 @@ See [Anthropic's research on context engineering](https://www.anthropic.com/engi
 
 ```bash
 # Clone the repo
-git clone https://github.com/YOUR_USERNAME/ralph-fresh.git
+git clone https://github.com/LiamACollins/ralph-fresh.git
 cd ralph-fresh
 
 # Optional: Add to PATH for convenience
