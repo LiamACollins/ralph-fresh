@@ -214,7 +214,7 @@ if [[ "$NO_COMMIT" == true ]]; then
 fi
 echo ""
 
-last_plan_hash=$(get_task_hash)
+last_plan_hash=$(get_plan_hash)
 
 for ((i=1; i<=MAX_ITERATIONS; i++)); do
   echo "========================================"
@@ -237,12 +237,12 @@ for ((i=1; i<=MAX_ITERATIONS; i++)); do
 
   set +e
   if [[ -n "$TIMEOUT_CMD" ]]; then
-    OUTPUT=$($TIMEOUT_CMD "${TIMEOUT_SECONDS}s" claude -p "$PROMPT" --dangerously-skip-permissions 2>&1)
-    EXIT_CODE=$?
+    OUTPUT=$($TIMEOUT_CMD "${TIMEOUT_SECONDS}s" claude -p "$PROMPT" --dangerously-skip-permissions 2>&1 | tee /dev/stderr)
+    EXIT_CODE=${PIPESTATUS[0]}
   else
     log "Warning: no timeout command found, running without timeout"
-    OUTPUT=$(claude -p "$PROMPT" --dangerously-skip-permissions 2>&1)
-    EXIT_CODE=$?
+    OUTPUT=$(claude -p "$PROMPT" --dangerously-skip-permissions 2>&1 | tee /dev/stderr)
+    EXIT_CODE=${PIPESTATUS[0]}
   fi
   set -e
 

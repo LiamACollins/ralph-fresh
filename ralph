@@ -1,0 +1,72 @@
+#!/bin/bash
+set -euo pipefail
+
+SOURCE="${BASH_SOURCE[0]}"
+while [ -L "$SOURCE" ]; do
+  DIR="$(cd -P "$(dirname "$SOURCE")" && pwd)"
+  SOURCE="$(readlink "$SOURCE")"
+  [[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE"
+done
+SCRIPT_DIR="$(cd -P "$(dirname "$SOURCE")" && pwd)"
+
+usage() {
+  cat <<EOF
+ralph - Fresh context loop for Claude Code
+
+Usage:
+  ralph <plan-file> [OPTIONS]    Initialize and start loop
+  ralph start [OPTIONS]          Start loop (if already initialized)
+  ralph init <plan-file>         Initialize only (no loop)
+
+Options (for start):
+  --max-iterations N      Max iterations (default: 10)
+  --timeout N             Minutes per iteration (default: 15)
+  --no-commit             Skip auto-commit
+  --verbose               Detailed output
+
+Examples:
+  ralph docs/plans/my-feature.md --max-iterations 20 --verbose
+  ralph start --verbose
+  ralph init docs/plans/my-feature.md
+EOF
+  exit 0
+}
+
+if [[ $# -eq 0 ]] || [[ "$1" == "--help" ]] || [[ "$1" == "-h" ]]; then
+  usage
+fi
+
+case "$1" in
+  start)
+    shift
+    exec "$SCRIPT_DIR/ralph.sh" "$@"
+    ;;
+  init)
+    shift
+    exec "$SCRIPT_DIR/ralph-init.sh" "$@"
+    ;;
+  *)
+    # First arg is a file path - init then start
+    PLAN_FILE="$1"
+    shift
+
+    if [[ ! -f "$PLAN_FILE" ]]; then
+      echo "Error: Plan file not found: $PLAN_FILE"
+      exit 1
+    fi
+
+    # Run init (non-interactive for combined mode)
+    if [[ -d ".ralph" ]]; then
+      echo "[ralph] Reinitializing .ralph/ with $PLAN_FILE"
+      rm -rf .ralph
+    fi
+
+    "$SCRIPT_DIR/ralph-init.sh" "$PLAN_FILE"
+
+    echo ""
+    echo "[ralph] Starting loop..."
+    echo ""
+
+    exec "$SCRIPT_DIR/ralph.sh" "$@"
+    ;;
+esac
