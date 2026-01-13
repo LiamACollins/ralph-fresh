@@ -71,8 +71,8 @@ archive_branch_files() {
   if [[ -f "$RALPH_DIR/progress.txt" ]]; then
     cp "$RALPH_DIR/progress.txt" "$ARCHIVE_DIR/$archive_name/"
   fi
-  if [[ -f "$RALPH_DIR/task.md" ]]; then
-    cp "$RALPH_DIR/task.md" "$ARCHIVE_DIR/$archive_name/"
+  if [[ -f "$RALPH_DIR/plan.md" ]]; then
+    cp "$RALPH_DIR/plan.md" "$ARCHIVE_DIR/$archive_name/"
   fi
 
   log_always "Archived previous branch files to $ARCHIVE_DIR/$archive_name/"
@@ -176,8 +176,8 @@ if [[ ! -f "$RALPH_DIR/prompt.md" ]]; then
   exit 1
 fi
 
-if [[ ! -f "$RALPH_DIR/task.md" ]]; then
-  echo "Error: $RALPH_DIR/task.md not found."
+if [[ ! -f "$RALPH_DIR/plan.md" ]]; then
+  echo "Error: $RALPH_DIR/plan.md not found."
   exit 1
 fi
 
@@ -186,18 +186,18 @@ write_runtime_config
 
 no_progress_count=0
 completion_signal_count=0
-last_task_md_hash=""
+last_plan_hash=""
 
-get_task_hash() {
-  md5 -q "$RALPH_DIR/task.md" 2>/dev/null || md5sum "$RALPH_DIR/task.md" | cut -d' ' -f1
+get_plan_hash() {
+  md5 -q "$RALPH_DIR/plan.md" 2>/dev/null || md5sum "$RALPH_DIR/plan.md" | cut -d' ' -f1
 }
 
 check_progress() {
   local current_hash
-  current_hash=$(get_task_hash)
+  current_hash=$(get_plan_hash)
 
-  if [[ "$current_hash" != "$last_task_md_hash" ]]; then
-    last_task_md_hash="$current_hash"
+  if [[ "$current_hash" != "$last_plan_hash" ]]; then
+    last_plan_hash="$current_hash"
     return 0
   fi
   return 1
@@ -214,7 +214,7 @@ if [[ "$NO_COMMIT" == true ]]; then
 fi
 echo ""
 
-last_task_md_hash=$(get_task_hash)
+last_plan_hash=$(get_task_hash)
 
 for ((i=1; i<=MAX_ITERATIONS; i++)); do
   echo "========================================"
@@ -273,7 +273,7 @@ for ((i=1; i<=MAX_ITERATIONS; i++)); do
   fi
 
   if check_progress; then
-    log "Progress detected (task.md changed)"
+    log "Progress detected (plan.md changed)"
     no_progress_count=0
   else
     no_progress_count=$((no_progress_count + 1))

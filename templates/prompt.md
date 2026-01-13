@@ -24,12 +24,12 @@ Read these files to understand current task state:
    - **Read the "Codebase Patterns" section first** - reusable patterns for this repo
    - Check the "Task Progress" table for passes/fails status
    - Review recent iteration entries for context
-2. `.ralph/task.md` - Task checklist with stories
+2. `.ralph/plan.md` - Your plan with stories to implement
 3. Recent git log: `git log --oneline -10`
 
 ## Step 3: Select ONE Story
 
-Look at `.ralph/task.md` and find the FIRST unchecked story `- [ ]`.
+Look at `.ralph/plan.md` and find the FIRST unchecked story `- [ ]`.
 
 Work on ONLY that story this iteration. Do not work on multiple stories.
 
@@ -43,7 +43,7 @@ Implement the story:
 
 ## Step 5: Quality Gates
 
-Run the quality gates specified in `.ralph/task.md`:
+Run any quality gates specified in `.ralph/plan.md` (look for a "Quality Gates" or "Testing" section):
 - If tests/typecheck commands are listed, run them
 - If they fail, debug and fix before proceeding
 - Do not mark a story complete if quality gates fail
@@ -54,7 +54,7 @@ Check `.ralph/.runtime-config`:
 - If `NO_COMMIT=false`: Stage and commit your changes following the project's commit conventions (from AGENTS.md/CLAUDE.md)
 - If `NO_COMMIT=true`: Skip committing, user will review and commit manually
 
-## Step 7: Update task.md
+## Step 7: Update plan.md
 
 Mark the completed story with `[x]`:
 ```markdown
@@ -114,7 +114,7 @@ If you discovered a genuinely reusable pattern that should persist beyond this r
 
 ## Step 10: Check Completion
 
-If ALL stories in task.md are marked `[x]` (passed):
+If ALL stories in plan.md are marked `[x]` (passed):
 - Output: `<promise>COMPLETE</promise>`
 
 If stories remain (including `[!]` failed stories):
@@ -126,7 +126,7 @@ If stories remain (including `[!]` failed stories):
 1. **Follow AGENTS.md/CLAUDE.md** - Project rules override these instructions
 2. ONE story per iteration - do not try to do multiple
 3. ALWAYS update progress.txt - this is how you remember
-4. ALWAYS update task.md - this tracks what's done
+4. ALWAYS update plan.md - this tracks what's done
 5. Read the Codebase Patterns section FIRST - learn from past discoveries
 6. Track passes/fails in the Task Progress table
 7. Do NOT output `<promise>COMPLETE</promise>` unless ALL stories passed

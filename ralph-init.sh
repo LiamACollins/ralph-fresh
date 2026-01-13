@@ -13,18 +13,18 @@ RALPH_DIR=".ralph"
 
 usage() {
   cat <<EOF
-ralph-init.sh - Initialize ralph files in current project
+ralph-init.sh - Initialize ralph with a plan file
 
-Usage: ralph-init.sh "Task description"
+Usage: ralph-init.sh <plan-file>
 
 Creates:
-  $RALPH_DIR/task.md       - Task checklist (edit this!)
+  $RALPH_DIR/plan.md       - Your plan (copied from argument)
   $RALPH_DIR/progress.txt  - Learnings log (auto-updated)
   $RALPH_DIR/prompt.md     - Instructions for Claude (customizable)
 
 Example:
   cd /path/to/your/project
-  ralph-init.sh "Add user authentication with JWT"
+  ralph-init.sh docs/plans/add-user-auth.md
 EOF
   exit 0
 }
@@ -37,7 +37,13 @@ if [[ $# -eq 0 ]] || [[ "$1" == "--help" ]] || [[ "$1" == "-h" ]]; then
   usage
 fi
 
-TASK_DESCRIPTION="$*"
+PLAN_FILE="$1"
+
+if [[ ! -f "$PLAN_FILE" ]]; then
+  echo "Error: Plan file not found: $PLAN_FILE"
+  exit 1
+fi
+
 CURRENT_BRANCH=$(get_current_branch)
 
 if [[ -d "$RALPH_DIR" ]]; then
@@ -52,13 +58,14 @@ fi
 
 mkdir -p "$RALPH_DIR"
 
-ESCAPED_TASK=$(printf '%s' "$TASK_DESCRIPTION" | sed 's/[&/\]/\\&/g')
-sed "s|{{TASK_DESCRIPTION}}|$ESCAPED_TASK|g" "$TEMPLATES_DIR/task.md.template" > "$RALPH_DIR/task.md"
+# Copy the plan file
+cp "$PLAN_FILE" "$RALPH_DIR/plan.md"
 
 cp "$TEMPLATES_DIR/progress.txt.template" "$RALPH_DIR/progress.txt"
 {
   echo "Started: $(date '+%Y-%m-%d %H:%M')"
   echo "Branch: $CURRENT_BRANCH"
+  echo "Plan: $PLAN_FILE"
   echo ""
 } >> "$RALPH_DIR/progress.txt"
 
@@ -77,9 +84,10 @@ fi
 
 echo ""
 echo "Initialized ralph in $RALPH_DIR/"
+echo "Plan: $PLAN_FILE -> $RALPH_DIR/plan.md"
 echo "Branch: $CURRENT_BRANCH"
 echo ""
 echo "Next steps:"
-echo "  1. Edit $RALPH_DIR/task.md to define your stories"
+echo "  1. Review $RALPH_DIR/plan.md (ensure stories have [ ] checkboxes)"
 echo "  2. Run: ralph.sh --max-iterations 20 --verbose"
 echo ""

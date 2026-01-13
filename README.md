@@ -16,7 +16,8 @@ See [Anthropic's research on context engineering](https://www.anthropic.com/engi
 ## Features
 
 - **Fresh context**: Each iteration spawns a new `claude` process
-- **Learning files**: progress.txt captures learnings, task.md tracks state
+- **Plan-driven**: Feed in your plan file, ralph executes it story by story
+- **Learning files**: progress.txt captures learnings, plan.md tracks state
 - **Codebase Patterns**: Dedicated section for reusable patterns across ALL tasks
 - **Passes/Fails tracking**: Task Progress table with status per story
 - **Branch archiving**: Auto-archives progress when switching git branches
@@ -48,10 +49,13 @@ ln -s "$(pwd)/ralph-init.sh" ~/.local/bin/ralph-init
 # 1. Go to your project
 cd /path/to/your/project
 
-# 2. Initialize ralph
-ralph-init.sh "Add user authentication with JWT"
+# 2. Create your plan (use /spec-interview or write manually)
+# Your plan should have stories as checkboxes:
+# - [ ] Story 1: Do something
+# - [ ] Story 2: Do something else
 
-# 3. Edit .ralph/task.md to define your stories
+# 3. Initialize ralph with your plan
+ralph-init.sh docs/plans/my-feature.md
 
 # 4. Run the loop
 ralph.sh --max-iterations 20 --verbose
@@ -59,25 +63,25 @@ ralph.sh --max-iterations 20 --verbose
 
 ## Usage
 
-### Initialize a task
+### Initialize with a plan
 
 ```bash
-ralph-init.sh "Your task description"
+ralph-init.sh <plan-file>
 ```
 
 Creates `.ralph/` directory with:
-- `task.md` - Task checklist (edit this!)
+- `plan.md` - Your plan (copied from argument)
 - `progress.txt` - Learnings log with Codebase Patterns section
 - `prompt.md` - Instructions for Claude (customizable)
 
-### Define your stories
+### Plan file format
 
-Edit `.ralph/task.md`:
+Your plan should include stories as checkboxes:
 
 ```markdown
-# Task: Add user authentication with JWT
+# Feature: Add user authentication with JWT
 
-## Stories (in priority order)
+## Stories
 - [ ] Set up auth database schema and migrations
 - [ ] Implement login endpoint with JWT generation
 - [ ] Add authentication middleware
@@ -87,6 +91,10 @@ Edit `.ralph/task.md`:
 ## Quality Gates
 pnpm typecheck
 pnpm test
+
+## Notes
+- Use existing patterns in src/api/
+- Follow the style in CLAUDE.md
 ```
 
 ### Run the loop
@@ -188,9 +196,9 @@ When you switch git branches, ralph automatically:
 ├── archive/
 │   └── 2024-01-09-1030-feature-auth/
 │       ├── progress.txt
-│       └── task.md
+│       └── plan.md
 ├── progress.txt (current)
-└── task.md (current)
+└── plan.md (current)
 ```
 
 ## Safety Features
@@ -231,7 +239,7 @@ Claude made no progress for 3 iterations. Check:
 An iteration took too long. Options:
 - Increase timeout: `--timeout 30`
 - Break story into smaller pieces
-- Add more context in task.md Notes section
+- Add more context in plan.md Notes section
 
 ## Contributing
 
