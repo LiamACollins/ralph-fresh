@@ -4,7 +4,7 @@
 
 <!--
 Add patterns here that apply to ANY future work in this repo.
-Future iterations and tasks will read this section first.
+Future iterations will read this section first.
 Examples:
 - ORM: Drizzle, schema in src/db/schema.ts
 - API: Use zodios pattern in src/api/
@@ -13,12 +13,4 @@ Examples:
 
 ---
 
-## Task Progress
-
-| Story | Status | Iteration |
-|-------|--------|-----------|
-
----
-
 ## Iteration Log
-

@@ -1,6 +1,9 @@
 #!/bin/bash
 set -euo pipefail
 
+# ralph - Fresh context loop for Claude Code
+# Usage: ralph <plan.json> [max-iterations]
+
 SOURCE="${BASH_SOURCE[0]}"
 while [ -L "$SOURCE" ]; do
   DIR="$(cd -P "$(dirname "$SOURCE")" && pwd)"
@@ -9,64 +12,133 @@ while [ -L "$SOURCE" ]; do
 done
 SCRIPT_DIR="$(cd -P "$(dirname "$SOURCE")" && pwd)"
 
+RALPH_DIR=".ralph"
+MAX_ITERATIONS="${2:-10}"
+TIMEOUT_MINUTES=15
+NO_PROGRESS_THRESHOLD=3
+
 usage() {
   cat <<EOF
 ralph - Fresh context loop for Claude Code
 
-Usage:
-  ralph <plan-file> [OPTIONS]    Initialize and start loop
-  ralph start [OPTIONS]          Start loop (if already initialized)
-  ralph init <plan-file>         Initialize only (no loop)
+Usage: ralph <plan.json> [max-iterations]
 
-Options (for start):
-  --max-iterations N      Max iterations (default: 10)
-  --timeout N             Minutes per iteration (default: 15)
-  --no-commit             Skip auto-commit
-  --verbose               Detailed output
+Arguments:
+  plan.json        JSON plan file (from /spec-interview)
+  max-iterations   Max iterations before stop (default: 10)
 
-Examples:
-  ralph docs/plans/my-feature.md --max-iterations 20 --verbose
-  ralph start --verbose
-  ralph init docs/plans/my-feature.md
+Example:
+  ralph docs/plans/my-feature.json
+  ralph docs/plans/my-feature.json 20
 EOF
   exit 0
 }
 
-if [[ $# -eq 0 ]] || [[ "$1" == "--help" ]] || [[ "$1" == "-h" ]]; then
-  usage
+[[ $# -eq 0 ]] || [[ "$1" == "--help" ]] || [[ "$1" == "-h" ]] && usage
+
+PLAN_FILE="$1"
+
+if [[ ! -f "$PLAN_FILE" ]]; then
+  echo "Error: Plan file not found: $PLAN_FILE"
+  exit 1
 fi
 
-case "$1" in
-  start)
-    shift
-    exec "$SCRIPT_DIR/ralph.sh" "$@"
-    ;;
-  init)
-    shift
-    exec "$SCRIPT_DIR/ralph-init.sh" "$@"
-    ;;
-  *)
-    # First arg is a file path - init then start
-    PLAN_FILE="$1"
-    shift
+# Validate JSON
+if ! jq empty "$PLAN_FILE" 2>/dev/null; then
+  echo "Error: Invalid JSON in $PLAN_FILE"
+  exit 1
+fi
 
-    if [[ ! -f "$PLAN_FILE" ]]; then
-      echo "Error: Plan file not found: $PLAN_FILE"
-      exit 1
+# Initialize .ralph/
+rm -rf "$RALPH_DIR"
+mkdir -p "$RALPH_DIR"
+cp "$PLAN_FILE" "$RALPH_DIR/plan.json"
+cp "$SCRIPT_DIR/templates/prompt.md" "$RALPH_DIR/prompt.md"
+
+cp "$SCRIPT_DIR/templates/progress.txt.template" "$RALPH_DIR/progress.txt"
+cat >> "$RALPH_DIR/progress.txt" <<EOF
+Started: $(date '+%Y-%m-%d %H:%M')
+Plan: $PLAN_FILE
+
+EOF
+
+# Add to .gitignore if needed
+if [[ -f .gitignore ]] && ! grep -q "^\.ralph/$" .gitignore 2>/dev/null; then
+  echo -e "\n# Ralph working files\n.ralph/" >> .gitignore
+fi
+
+echo "[ralph] Initialized with $PLAN_FILE"
+echo "[ralph] Max iterations: $MAX_ITERATIONS"
+echo ""
+
+# Determine timeout command
+TIMEOUT_CMD=""
+if command -v gtimeout &>/dev/null; then
+  TIMEOUT_CMD="gtimeout"
+elif command -v timeout &>/dev/null; then
+  TIMEOUT_CMD="timeout"
+fi
+
+get_plan_hash() {
+  md5 -q "$RALPH_DIR/plan.json" 2>/dev/null || md5sum "$RALPH_DIR/plan.json" | cut -d' ' -f1
+}
+
+no_progress=0
+last_hash=$(get_plan_hash)
+
+for ((i=1; i<=MAX_ITERATIONS; i++)); do
+  echo "========================================"
+  echo "[ralph] Iteration $i of $MAX_ITERATIONS"
+  echo "========================================"
+
+  PROMPT=$(cat "$RALPH_DIR/prompt.md")
+
+  set +e
+  if [[ -n "$TIMEOUT_CMD" ]]; then
+    OUTPUT=$($TIMEOUT_CMD "$((TIMEOUT_MINUTES * 60))s" claude -p "$PROMPT" \
+      --allowedTools "Read,Write,Edit,Bash,Glob,Grep,TodoRead,TodoWrite" 2>&1 | tee /dev/stderr)
+    EXIT_CODE=${PIPESTATUS[0]}
+  else
+    OUTPUT=$(claude -p "$PROMPT" \
+      --allowedTools "Read,Write,Edit,Bash,Glob,Grep,TodoRead,TodoWrite" 2>&1 | tee /dev/stderr)
+    EXIT_CODE=$?
+  fi
+  set -e
+
+  # Timeout
+  if [[ $EXIT_CODE -eq 124 ]]; then
+    echo "[ralph] Timeout after ${TIMEOUT_MINUTES}m"
+    # Check if there's uncommitted work before declaring no progress
+    if [[ -n "$(git status --porcelain 2>/dev/null)" ]]; then
+      echo "[ralph] Uncommitted changes detected, continuing..."
+      no_progress=0
+    else
+      ((no_progress++))
     fi
+    [[ $no_progress -ge $NO_PROGRESS_THRESHOLD ]] && echo "[ralph] Circuit breaker: no progress" && exit 1
+    continue
+  fi
 
-    # Run init (non-interactive for combined mode)
-    if [[ -d ".ralph" ]]; then
-      echo "[ralph] Reinitializing .ralph/ with $PLAN_FILE"
-      rm -rf .ralph
-    fi
-
-    "$SCRIPT_DIR/ralph-init.sh" "$PLAN_FILE"
-
+  # Check completion
+  if echo "$OUTPUT" | grep -q "<promise>COMPLETE</promise>"; then
     echo ""
-    echo "[ralph] Starting loop..."
-    echo ""
+    echo "[ralph] All stories complete!"
+    exit 0
+  fi
 
-    exec "$SCRIPT_DIR/ralph.sh" "$@"
-    ;;
-esac
+  # Check progress
+  current_hash=$(get_plan_hash)
+  if [[ "$current_hash" != "$last_hash" ]] || [[ -n "$(git status --porcelain 2>/dev/null)" ]]; then
+    no_progress=0
+    last_hash="$current_hash"
+  else
+    ((no_progress++))
+    echo "[ralph] No progress ($no_progress/$NO_PROGRESS_THRESHOLD)"
+    [[ $no_progress -ge $NO_PROGRESS_THRESHOLD ]] && echo "[ralph] Circuit breaker: no progress" && exit 1
+  fi
+
+  sleep 2
+done
+
+echo "[ralph] Max iterations reached"
+exit 1
