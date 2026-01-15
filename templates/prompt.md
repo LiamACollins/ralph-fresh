@@ -12,9 +12,10 @@ These define code style, commits, testing. **Follow them exactly.**
 
 ## Step 2: Read Ralph Context
 
-1. `.ralph/progress.txt` - Learnings from previous iterations (read Codebase Patterns first)
-2. `.ralph/plan.json` - Your task list
-3. `git log --oneline -10` - Recent commits
+1. `docs/solutions/` - Past learnings from previous tasks (if exists, scan for relevant patterns)
+2. `.ralph/progress.txt` - Learnings from THIS task's iterations (read Codebase Patterns first)
+3. `.ralph/plan.json` - Your task list
+4. `git log --oneline -10` - Recent commits
 
 ## Step 3: Select ONE Story
 
@@ -85,3 +86,10 @@ If stories remain incomplete:
 4. Read Codebase Patterns FIRST
 5. Do NOT output `<promise>COMPLETE</promise>` unless ALL stories passed
 6. If stuck, mark story blocked and document in progress.txt
+
+## After Completion
+
+When outputting `<promise>COMPLETE</promise>`, remind user:
+```
+Run /compound to save learnings to docs/solutions/ for future tasks.
+```
